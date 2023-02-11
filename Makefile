@@ -25,12 +25,7 @@ INCLUDES	:=	include
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS	= -O2 -Wall $(MACHDEP) $(INCLUDE) -DDOLPHIN_CHECK
-
-ifdef NO_DOLPHIN_CHECK
-	CFLAGS	= -O2 -Wall $(MACHDEP) $(INCLUDE)
-	TARGET = sdboot-installer_noDolphinCheck
-endif
+CFLAGS	= -O2 -Wall $(MACHDEP) $(INCLUDE)
 
 CXXFLAGS	=	$(CFLAGS)
 
@@ -110,7 +105,6 @@ $(BUILD):
 clean:
 	@echo clean ...
 	@rm -fr $(BUILD) $(OUTPUT).elf $(OUTPUT).dol
-	@rm -fr $(BUILD) $(OUTPUT)_noDolphinCheck.elf $(OUTPUT)_noDolphinCheck.dol
 
 #---------------------------------------------------------------------------------
 run:
