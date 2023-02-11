@@ -35,107 +35,107 @@ void WaitExit( void ) {
 }
 
 void dumpBlock(const char *filename, int block){
-    static unsigned char buffer[NAND_BLOCK_SIZE] __attribute__ ((aligned(32)));
-    s32 fd = -1;
-    int rv;
+	static unsigned char buffer[NAND_BLOCK_SIZE] __attribute__ ((aligned(32)));
+	s32 fd = -1;
+	int rv;
 
-    printf("Dumping block %d...\n", block);
+	printf("Dumping block %d...\n", block);
 
-    FILE *fout = fopen(filename, "wb");
-    if(fout == NULL){
-        printf("Error: cannot open file %s\n", filename);
-        exit(0);
-    }
+	FILE *fout = fopen(filename, "wb");
+	if(fout == NULL){
+		printf("Error: cannot open file %s\n", filename);
+		exit(0);
+	}
 
-    fd = IOS_Open("/dev/flash", IPC_OPEN_READ);
+	fd = IOS_Open("/dev/flash", IPC_OPEN_READ);
 	if (fd < 0) {
 		printf("Failed to open /dev/flash (fd = %d)\n", fd);
 		exit(0);
 	}
 
-    rv = IOS_Seek(fd, block * 64, 0);
-    if (rv < 0){
-        printf("Failed to seek to block %d (rv = %d)\n", block, rv);
+	rv = IOS_Seek(fd, block * 64, 0);
+	if (rv < 0){
+		printf("Failed to seek to block %d (rv = %d)\n", block, rv);
 		exit(0);
-    }
+	}
 
-    for (int page = 0; page < 64; page++) {
-        rv = IOS_Seek(fd, block * 64 + page, 0);
-        if (rv < 0){
-            printf("Failed to seek to page %d (rv = %d)\n", block * 64 + page, rv);
-		    exit(0);
-        }
+	for (int page = 0; page < 64; page++) {
+		rv = IOS_Seek(fd, block * 64 + page, 0);
+		if (rv < 0){
+			printf("Failed to seek to page %d (rv = %d)\n", block * 64 + page, rv);
+			exit(0);
+		}
 
 		rv = IOS_Read(fd, buffer, (u32) NAND_PAGE_SIZE);
 
-        fwrite(buffer, NAND_PAGE_SIZE, 1, fout);
+		fwrite(buffer, NAND_PAGE_SIZE, 1, fout);
 
-        if(page % 16 == 0){
-            printf("Page %d: ", page);
-            for(int j=0; j<16; j++) // Print the first 16 bytes of the dumped page (debugging)
-                printf("%02X ", buffer[j]);
-            printf("\n");
-        }
+		if(page % 16 == 0){
+			printf("Page %d: ", page);
+			for(int j=0; j<16; j++) // Print the first 16 bytes of the dumped page (debugging)
+				printf("%02X ", buffer[j]);
+			printf("\n");
+		}
 	}
 
-    IOS_Close(fd);
-    fclose(fout);
+	IOS_Close(fd);
+	fclose(fout);
 }
 
 void flashBlock(const char *filename, int block){
-    static unsigned char buffer[NAND_BLOCK_SIZE] __attribute__ ((aligned(32)));
-    s32 fd = -1;
-    int rv;
+	static unsigned char buffer[NAND_BLOCK_SIZE] __attribute__ ((aligned(32)));
+	s32 fd = -1;
+	int rv;
 
-    printf("Flashing block %d...\n", block);
+	printf("Flashing block %d...\n", block);
 
-    FILE *fin = fopen(filename, "rb");
-    if(fin == NULL){
-        printf("Error: cannot open file %s\n", filename);
-        WaitExit();
-    }
+	FILE *fin = fopen(filename, "rb");
+	if(fin == NULL){
+		printf("Error: cannot open file %s\n", filename);
+		WaitExit();
+	}
 
-    fd = IOS_Open("/dev/flash", IPC_OPEN_WRITE);
+	fd = IOS_Open("/dev/flash", IPC_OPEN_WRITE);
 	if (fd < 0) {
 		printf("Failed to open /dev/flash (fd = %d)\n", fd);
 		WaitExit();
 	}
 
-    rv = IOS_Seek(fd, block * 64, 0);
-    if (rv < 0){
-        printf("Failed to seek to block %d (rv = %d)\n", block, rv);
+	rv = IOS_Seek(fd, block * 64, 0);
+	if (rv < 0){
+		printf("Failed to seek to block %d (rv = %d)\n", block, rv);
 		WaitExit();
-    }
+	}
 
-    rv = IOS_Ioctl(fd, 3, NULL, 0, NULL, 0); // This at least works
-    if(rv < 0){
-        printf("Failed to erase block %d (rv = %d)\n", block, rv);
+	rv = IOS_Ioctl(fd, 3, NULL, 0, NULL, 0); // This at least works
+	if(rv < 0){
+		printf("Failed to erase block %d (rv = %d)\n", block, rv);
 		WaitExit();
-    }
+	}
 
-    for (int page = 0; page < 64; page++) {
-        rv = IOS_Seek(fd, block * 64 + page, 0);
-        if (rv < 0){
-            printf("Failed to seek to page %d (rv = %d)\n", block * 64 + page, rv);
-		    exit(0);
-        }
+	for (int page = 0; page < 64; page++) {
+		rv = IOS_Seek(fd, block * 64 + page, 0);
+		if (rv < 0){
+			printf("Failed to seek to page %d (rv = %d)\n", block * 64 + page, rv);
+			exit(0);
+		}
 
-        fread(buffer, NAND_PAGE_SIZE, 1, fin);
+		fread(buffer, NAND_PAGE_SIZE, 1, fin);
 
 		rv = IOS_Write(fd, buffer, (u32) NAND_PAGE_SIZE);
 
-        if(rv != 2112)
-            printf("Write error: page %d block %d (rv = %d)\n", page, block, rv);
+		if(rv != 2112)
+			printf("Write error: page %d block %d (rv = %d)\n", page, block, rv);
 	}
 
-    IOS_Close(fd);
-    fclose(fin);
+	IOS_Close(fd);
+	fclose(fin);
 }
 
 int main(int argc, char **argv){
-    IOS_ReloadIOS(IOS_SLOT); // Need IOS15, IOS16 or maybe IOS255
+	IOS_ReloadIOS(IOS_SLOT); // Need IOS15, IOS16 or maybe IOS255
 
-    VIDEO_Init();
+	VIDEO_Init();
 	WPAD_Init();
 	PAD_Init();
 	rmode = VIDEO_GetPreferredMode(NULL);
@@ -149,20 +149,20 @@ int main(int argc, char **argv){
 	VIDEO_WaitVSync();
 	if(rmode->viTVMode&VI_NON_INTERLACE) VIDEO_WaitVSync();
 	
-    if(!fatInitDefault()){
+	if(!fatInitDefault()){
 		printf("Error: cannot init FAT\n");
 		WaitExit();
 	}
 
 	printf("\x1b[2;0H");
-    printf("Wii bricker!\n");
+	printf("Wii bricker!\n");
 
-    dumpBlock("/blk2dmp1.bin", 2);
-    flashBlock("/block2.bin", 2);
-    dumpBlock("/blk2dmp2.bin", 2);
+	dumpBlock("/blk2dmp1.bin", 2);
+	flashBlock("/block2.bin", 2);
+	dumpBlock("/blk2dmp2.bin", 2);
 
-    printf("Done.\n");
-    
-    WaitExit();
+	printf("Done.\n");
+
+	WaitExit();
 	return 0;
 }
