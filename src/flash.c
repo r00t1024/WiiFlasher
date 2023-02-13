@@ -4,12 +4,12 @@
 #include "flash.h"
 #include "tools.h"
 
-void dumpBlock(const char *filename, int block){
+void dumpBlocks(const char *filename, int firstBlock, int lastBlock){
 	static unsigned char buffer[NAND_BLOCK_SIZE] __attribute__ ((aligned(32)));
 	s32 fd = -1;
 	int rv;
 
-	printf("Dumping block %d...\n", block);
+	printf("Dumping blocks...\n");
 
 	FILE *fout = fopen(filename, "wb");
 	if(fout == NULL){
@@ -23,16 +23,19 @@ void dumpBlock(const char *filename, int block){
 		WaitExit();
 	}
 
-	rv = IOS_Seek(fd, block * 64, 0);
+	rv = IOS_Seek(fd, firstBlock * 64, 0);
 	if (rv < 0){
-		printf("Failed to seek to block %d (rv = %d)\n", block, rv);
+		printf("Failed to seek to block %d (rv = %d)\n", firstBlock, rv);
 		WaitExit();
 	}
 
-	for (int page = 0; page < 64; page++) {
-		rv = IOS_Seek(fd, block * 64 + page, 0);
+	for (int page = firstBlock * 64; page < (lastBlock + 1) * 64; page++) {
+		if(page % 64 == 0)
+			printf("Flashing block %d...\n", page / 64);
+
+		rv = IOS_Seek(fd, page, 0);
 		if (rv < 0){
-			printf("Failed to seek to page %d (rv = %d)\n", block * 64 + page, rv);
+			printf("Failed to seek to page %d (rv = %d)\n", page, rv);
 			WaitExit();
 		}
 
@@ -45,12 +48,12 @@ void dumpBlock(const char *filename, int block){
 	fclose(fout);
 }
 
-void flashBlock(const char *filename, int block){
+void flashBlocks(const char *filename, int firstBlock, int lastBlock){
 	static unsigned char buffer[NAND_BLOCK_SIZE] __attribute__ ((aligned(32)));
 	s32 fd = -1;
 	int rv;
 
-	printf("Flashing block %d...\n", block);
+	printf("Flashing blocks...\n");
 
 	FILE *fin = fopen(filename, "rb");
 	if(fin == NULL){
@@ -64,22 +67,27 @@ void flashBlock(const char *filename, int block){
 		WaitExit();
 	}
 
-	rv = IOS_Seek(fd, block * 64, 0);
-	if (rv < 0){
-		printf("Failed to seek to block %d (rv = %d)\n", block, rv);
-		WaitExit();
-	}
-
-	rv = IOS_Ioctl(fd, 3, NULL, 0, NULL, 0); // Erase block
-	if(rv < 0){
-		printf("Failed to erase block %d (rv = %d)\n", block, rv);
-		WaitExit();
-	}
-
-	for (int page = 0; page < 64; page++) {
-		rv = IOS_Seek(fd, block * 64 + page, 0);
+	for(int block = firstBlock; block < lastBlock + 1; block++){
+		rv = IOS_Seek(fd, block * 64, 0);
 		if (rv < 0){
-			printf("Failed to seek to page %d (rv = %d)\n", block * 64 + page, rv);
+			printf("Failed to seek to block %d (rv = %d)\n", block, rv);
+			WaitExit();
+		}
+		printf("Erasing block %d...\n", block);
+		rv = IOS_Ioctl(fd, 3, NULL, 0, NULL, 0); // Erase block
+		if(rv < 0){
+			printf("Failed to erase block %d (rv = %d)\n", block, rv);
+			WaitExit();
+		}
+	}
+
+	for (int page = firstBlock * 64; page < (lastBlock + 1) * 64; page++) {
+		if(page % 64 == 0)
+			printf("Flashing block %d...\n", page / 64);
+
+		rv = IOS_Seek(fd, page, 0);
+		if (rv < 0){
+			printf("Failed to seek to page %d (rv = %d)\n", page, rv);
 			WaitExit();
 		}
 
@@ -88,9 +96,17 @@ void flashBlock(const char *filename, int block){
 		rv = IOS_Write(fd, buffer, (u32) NAND_PAGE_SIZE);
 
 		if(rv != 2112)
-			printf("Write error: page %d block %d (rv = %d)\n", page, block, rv);
+			printf("Write error: page %d block %d (rv = %d)\n", page, page / 64, rv);
 	}
 
 	IOS_Close(fd);
 	fclose(fin);
+}
+
+void dumpBlock(const char *filename, int block){
+	dumpBlocks(filename, block, block);
+}
+
+void flashBlock(const char *filename, int block){
+	flashBlocks(filename, block, block);
 }
