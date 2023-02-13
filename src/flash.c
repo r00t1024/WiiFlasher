@@ -4,6 +4,37 @@
 #include "flash.h"
 #include "tools.h"
 
+void eraseBlocks(int firstBlock, int lastBlock){
+	s32 fd = -1;
+	int rv;
+
+	fd = IOS_Open("/dev/flash", IPC_OPEN_WRITE);
+	if (fd < 0) {
+		printf("Failed to open /dev/flash (fd = %d)\n", fd);
+		WaitExit();
+	}
+
+	for(int block = firstBlock; block < lastBlock + 1; block++){
+		rv = IOS_Seek(fd, block * 64, 0);
+		if (rv < 0){
+			printf("Failed to seek to block %d (rv = %d)\n", block, rv);
+			WaitExit();
+		}
+		printf("Erasing block %d...\n", block);
+		rv = IOS_Ioctl(fd, 3, NULL, 0, NULL, 0); // Erase block
+		if(rv < 0){
+			printf("Failed to erase block %d (rv = %d)\n", block, rv);
+			WaitExit();
+		}
+	}
+
+	IOS_Close(fd);
+}
+
+void eraseBlock(int block){
+	eraseBlocks(block, block);
+}
+
 void dumpBlocks(const char *filename, int firstBlock, int lastBlock){
 	static unsigned char buffer[NAND_BLOCK_SIZE] __attribute__ ((aligned(32)));
 	s32 fd = -1;
