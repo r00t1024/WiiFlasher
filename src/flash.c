@@ -13,6 +13,10 @@ s32 NANDFlashInit(){
 	return 0;
 }
 
+void NANDFlashClose(){
+	IOS_Close(fd);
+}
+
 
 s32 __isPageEmpty(u8* data){
 	u8 emptyPage[NAND_PAGE_SIZE];
@@ -70,7 +74,8 @@ s32 __eraseBlock(int blockno){
 
 s32 __flashBlock(u8* data, int blockno){
 	int rv;
-	u8 nandPage[NAND_PAGE_SIZE];
+	u8* nandPage = (u8*)malloc(NAND_PAGE_SIZE);
+	//u8 nandPage[NAND_PAGE_SIZE];
 	
 	rv = __eraseBlock(blockno);
 	if(rv < 0)
@@ -142,6 +147,7 @@ struct Simulation __simulateWrite(const char* fileName, int firstBlock, int last
 	
 	free(nandPage);
 	free(filePage);
+	fclose(fin);
 	
 	return sim;
 }
@@ -155,6 +161,8 @@ s32 flashFile(const char* fileName, int firstBlock, int lastBlock, struct Simula
 		return MISSING_FILE;
 	
 	for(int block = firstBlock; block <= lastBlock; block++){
+		fseek(fin, block*NAND_BLOCK_SIZE, SEEK_SET);
+		
 		if(sim != NULL){
 			if(sim->blocksStatus[block - firstBlock] == 1){
 				printf(" [+] Flashing block %d...\n", block);
@@ -168,6 +176,8 @@ s32 flashFile(const char* fileName, int firstBlock, int lastBlock, struct Simula
 			__flashBlock(data, block);
 		}
 	}
+	
+	fclose(fin);
 	
 	return 0;
 }

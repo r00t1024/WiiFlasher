@@ -14,6 +14,8 @@ struct Simulation{
 };
 
 s32 NANDFlashInit();
+void NANDFlashClose();
+
 s32 flashFile(const char* fileName, int firstBlock, int lastBlock, struct Simulation* sim);
 struct Simulation flashFileSim(const char* fileName, int firstBlock, int lastBlock);
 s32 dumpPages(const char* fileName, int firstPage, int lastPage);
